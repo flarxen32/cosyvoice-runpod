@@ -69,15 +69,20 @@ def _decode_reference_audio(b64_data):
 
 
 def _tts_speech_to_wav_bytes(tts_speech_tensor, sample_rate):
-    """Converte tensor PyTorch [1, N] em bytes WAV (int16, mono)."""
-    import torch
+    """Converte tensor PyTorch [1, N] em bytes WAV (int16, mono).
+
+    Usa tempfile (método testado em example.py oficial) em vez de BytesIO
+    para máxima compatibilidade com torchaudio.
+    """
     import torchaudio
 
-    buf = io.BytesIO()
-    # torchaudio.save aceita file-like objects
-    torchaudio.save(buf, tts_speech_tensor.cpu(), sample_rate, format="wav")
-    buf.seek(0)
-    return buf.read()
+    tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+    tmp.close()
+    torchaudio.save(tmp.name, tts_speech_tensor.cpu(), sample_rate)
+    with open(tmp.name, "rb") as f:
+        wav_bytes = f.read()
+    os.unlink(tmp.name)
+    return wav_bytes
 
 
 def generate_audio(text, reference_audio=None, reference_text=None,
@@ -144,7 +149,7 @@ def generate_audio(text, reference_audio=None, reference_text=None,
         # Concatena ao longo do eixo temporal (dim=1 para shape [1, N])
         full = torch.cat(chunks, dim=1)
         wav_bytes = _tts_speech_to_wav_bytes(full, model.sample_rate)
-        return wav_bytes
+        return wav_bytes, model.sample_rate
 
     finally:
         if _cleanup_after and os.path.exists(_cleanup_after):
@@ -162,7 +167,7 @@ def handler(job):
         return {"error": "campo 'text' é obrigatório"}
 
     try:
-        wav_bytes = generate_audio(
+        wav_bytes, sr = generate_audio(
             text=text,
             reference_audio=job_input.get("reference_audio"),
             reference_text=job_input.get("reference_text"),
@@ -175,7 +180,7 @@ def handler(job):
         return {
             "audio": audio_b64,
             "format": "wav",
-            "sample_rate": 24000,
+            "sample_rate": sr,
             "size_bytes": len(wav_bytes),
         }
     except Exception as e:
