@@ -54,5 +54,16 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: false
 
+      - name: Make package public
+        continue-on-error: true
+        run: |
+          # Tenta tornar o package público via API (precisa GITHUB_TOKEN com packages:write)
+          # Se falhar, o usuário precisará tornar manual no GitHub Settings → Packages
+          curl -s -X PATCH \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/user/packages/container/${{ env.IMAGE_LOWER }}" \
+            -d '{"visibility":"public"}' || echo "WARN: não foi possível tornar o package público via API"
+
       - name: Image digest
         run: echo "Image pushed to ghcr.io/${{ env.IMAGE_LOWER }}:latest"

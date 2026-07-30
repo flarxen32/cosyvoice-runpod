@@ -14,9 +14,13 @@ ENV DEBIAN_FRONTEND=noninteractive \
     LC_ALL=C.UTF-8
 
 # ---------- Dependências de sistema ----------
+# build-essential/gcc necessários para compilar pyworld, pandas, etc.
+# libsndfile1-dev para soundfile; libffi-dev para cffi
 RUN apt-get update && apt-get install -y --no-install-recommends \
         python3.10 python3-pip python3.10-dev \
         git wget curl sox libsox-dev ffmpeg \
+        build-essential gcc g++ \
+        libsndfile1-dev libffi-dev \
         && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3.10 /usr/bin/python \
     && ln -sf /usr/bin/python3.10 /usr/bin/python3
