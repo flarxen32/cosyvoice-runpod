@@ -1,0 +1,7 @@
+# Dependências Python do handler (instaladas no container RunPod).
+# A maioria das deps pesadas (torch, torchaudio, transformers) vem do
+# requirements.txt do CosyVoice, instalado no Dockerfile.
+# Aqui só listamos o que o handler diretamente precisa além do CosyVoice.
+
+runpod==1.7.3
+huggingface_hub>=0.24.0
